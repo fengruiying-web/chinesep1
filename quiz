@@ -1,0 +1,357 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Trophy, 
+  Star, 
+  Lightbulb, 
+  ArrowRight, 
+  RefreshCcw, 
+  CheckCircle, 
+  AlertCircle, 
+  Heart,
+  BookOpen,
+  ChevronLeft,
+  Home,
+  Book,
+  Gamepad2
+} from 'lucide-react';
+
+const App = () => {
+  // 状态管理
+  const [view, setView] = useState('home');
+  const [selectedUnit, setSelectedUnit] = useState(null);
+  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
+  const [score, setScore] = useState(0);
+  const [showResult, setShowResult] = useState(false);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [isCorrect, setIsCorrect] = useState(null);
+  const [showHint, setShowHint] = useState(false);
+
+  // 单元配置
+  const units = [
+    { id: "u3", title: "第七课", subtitle: "开心动物园", icon: "🦁", color: "bg-orange-400" },
+    { id: "u4", title: "单元四", subtitle: "温馨的家", icon: "🏠", color: "bg-blue-400" },
+    { id: "u5", title: "单元五", subtitle: "中秋节", icon: "🥮", color: "bg-yellow-400" },
+    { id: "u6", title: "单元六", subtitle: "胆小的爸爸", icon: "👨‍👧", color: "bg-green-400" },
+    { id: "u7", title: "单元七", subtitle: "美丽的圣诞卡", icon: "🎄", color: "bg-red-400" }
+  ];
+
+  // 更新后的题库数据 (已删除指定题目)
+  const allQuizData = [
+    // --- 第七课 (15题) ---
+    { unitId: "u3", tag: "第七课", q: "草地上有一（  ）小羊。", options: ["头", "只", "把", "个"], a: 1, hint: "小动物常用量词。", r: "一只小羊。" },
+    { unitId: "u3", tag: "第七课", q: "小鸟在树上（  ）。", options: ["跳舞", "写字", "唱歌", "开门"], a: 2, hint: "形容悦耳的声音。", r: "小鸟唱歌。" },
+    { unitId: "u3", tag: "第七课", q: "小羊在地上（  ）。", options: ["唱歌", "跳舞", "画画", "看书"], a: 1, hint: "课文中的动作。", r: "小羊跳舞。" },
+    { unitId: "u3", tag: "第七课", q: "马、牛和羊都是（  ）。", options: ["朋友", "家人", "动物", "花灯"], a: 2, r: "它们是动物。" },
+    { unitId: "u3", tag: "第七课", q: "选出“马”的读音：", options: ["mā", "má", "mǎ", "mà"], a: 2, r: "马是三声 mǎ。" },
+    { unitId: "u3", tag: "第七课", q: "动物园里真（  ）。", options: ["胆小", "开心", "生病", "下班"], a: 1, r: "形容愉快的心情。" },
+    { unitId: "u3", tag: "第七课", q: "一（  ）大牛在走。 ", options: ["头", "只", "条", "张"], a: 0, r: "体型大的动物用“头”。" },
+    { unitId: "u3", tag: "第七课", q: "小羊长得（  ）可爱。", options: ["很", "把", "像", "和"], a: 0, r: "程度副词用“很”。" },
+    { unitId: "u3", tag: "第七课", q: "小鸟会飞，小羊会（  ）。", options: ["飞", "跑", "读", "写"], a: 1, r: "小羊在地上跑。" },
+    { unitId: "u3", tag: "第七课", q: "选出“开心”的正确拼音：", options: ["kāi xīn", "kāi xīng", "kǎi xīn", "kài xīn"], a: 0, r: "第一声 kāi，第一声 xīn。" },
+    { unitId: "u3", tag: "第七课", q: "草地上（  ）很多动物。", options: ["是", "在", "有", "去"], a: 2, r: "表示存在的“有”。" },
+    { unitId: "u3", tag: "第七课", q: "大马在前面，小马在（  ）。", options: ["前", "后", "上", "下"], a: 1, r: "反义词对比。" },
+    { unitId: "u3", tag: "第七课", q: "选出“羊”的字形：", options: ["半", "平", "羊", "美"], a: 2, r: "辨别字形。" },
+    { unitId: "u3", tag: "第七课", q: "小动物（  ）爱吃草。", options: ["都", "和", "像", "把"], a: 0, r: "表示全部用“都”。" },
+    { unitId: "u3", tag: "第七课", q: "谁在唱歌（ ）", options: ["。", "，", "？", "！"], a: 2, r: "疑问句用问号。" },
+
+    // --- 单元四 (15题) ---
+    { unitId: "u4", tag: "单元四", q: "我和姐姐（  ）爱看书。", options: ["又", "都", "很", "是"], a: 1, r: "我和姐姐都爱。" },
+    { unitId: "u4", tag: "单元四", q: "选出正确的句号：爸爸回家了（ ）", options: [",", "○", "。", "?"], a: 2, r: "标准句号是实心的圈。" },
+    { unitId: "u4", tag: "单元四", q: "哥哥倒了一杯（  ）给奶奶。", options: ["苹果", "开水", "书包", "笔"], a: 1, r: "开水可以倒在杯里。" },
+    { unitId: "u4", tag: "单元四", q: "选出“姐姐”的拼音：", options: ["jiě jie", "jě jě", "qiě qie", "jiě jié"], a: 0, r: "姐姐的正确拼音。" },
+    { unitId: "u4", tag: "单元四", q: "我爱我的（  ）。", options: ["家", "门", "去", "子"], a: 0, r: "家是最温暖的地方。" },
+    { unitId: "u4", tag: "单元四", q: "选出正确的字：爸爸（  ）班了。", options: ["上", "下", "中", "不"], a: 1, r: "下班回家。" },
+    { unitId: "u4", tag: "单元四", q: "我帮爷爷（  ）鞋子。", options: ["穿", "拿", "走", "看"], a: 0, r: "穿鞋子。" },
+    { unitId: "u4", tag: "单元四", q: "爸爸（  ）妈妈都回家了。", options: ["像", "和", "也", "把"], a: 1, r: "表示两者并列用“和”。" },
+    { unitId: "u4", tag: "单元四", q: "我的家很（  ）。", options: ["胆小", "温暖", "亮", "长"], a: 1, r: "形容家很温馨。" },
+    { unitId: "u4", tag: "单元四", q: "选出“生病”的读音：", options: ["shēng bìng", "shēn bìn", "sheng bin", "shēng bìn"], a: 0, r: "后鼻音 shēng bìng。" },
+    { unitId: "u4", tag: "单元四", q: "你放下书包（ ）我给你讲故事。", options: ["，", "。", "！", "？"], a: 0, r: "话没说完用逗号。" },
+    { unitId: "u4", tag: "单元四", q: "我背着（  ）上学校。", options: ["衣服", "书包", "老师", "苹果"], a: 1, r: "背书包。" },
+    { unitId: "u4", tag: "单元四", q: "选出“门”的字形：", options: ["们", "问", "门", "闪"], a: 2, r: "门框的样子。" },
+    { unitId: "u4", tag: "单元四", q: "姐姐（  ）起一个苹果给奶奶。", options: ["提", "拿", "背", "送"], a: 1, r: "拿起苹果。" },
+    { unitId: "u4", tag: "单元四", q: "放学了（ ）我们要回家。", options: ["。", "，", "？", "！"], a: 1, r: "逗号表示中顿。" },
+
+    // --- 单元五 (15题) ---
+    { unitId: "u5", tag: "单元五", q: "月亮又圆又（  ）。", options: ["香", "甜", "亮", "白"], a: 1, r: "月亮又圆又亮。" },
+    { unitId: "u5", tag: "单元五", q: "大树像一把大（  ）。", options: ["雪球", "镜子", "雨伞", "月饼"], a: 2, r: "形状像雨伞。" },
+    { unitId: "u5", tag: "单元五", q: "中秋节，我们要吃（  ）。", options: ["月饼", "棉花", "饼干", "苹果"], a: 0, r: "中秋传统。" },
+    { unitId: "u5", tag: "单元五", q: "白云是（  ）色的。", options: ["红", "白", "绿", "黑"], a: 1, r: "白云白白。" },
+    { unitId: "u5", tag: "单元五", q: "选出“朋友”的拼音：", options: ["péng you", "pèng yóu", "pén iou", "pén yǒu"], a: 0, r: "轻声 you。" },
+    { unitId: "u5", tag: "单元五", q: "西瓜又大又（  ）。", options: ["圆", "亮", "白", "高"], a: 0, r: "形容西瓜。" },
+    { unitId: "u5", tag: "单元五", q: "选出“也”字：", options: ["他", "也", "地", "她"], a: 1, r: "我也很开心。" },
+    { unitId: "u5", tag: "单元五", q: "白云（  ）棉花。", options: ["和", "像", "都", "把"], a: 1, r: "比喻词“像”。" },
+    { unitId: "u5", tag: "单元五", q: "大家一同（  ）游戏。", options: ["玩", "做", "看", "说"], a: 0, r: "玩游戏。" },
+    { unitId: "u5", tag: "单元五", q: "晚上，我提着（  ）去公园。", options: ["书包", "花灯", "衣服", "月饼"], a: 1, r: "提花灯。" },
+    { unitId: "u5", tag: "单元五", q: "月亮像（  ）的镜子。", options: ["闪亮", "欢快", "胆小", "温暖"], a: 0, r: "闪亮的镜子。" },
+    { unitId: "u5", tag: "单元五", q: "选出“圆”的拼音：", options: ["yuán", "yán", "yún", "yuǎn"], a: 0, r: "圆 yuán。" },
+    { unitId: "u5", tag: "单元五", q: "我们是（  ）朋友。", options: ["小", "大", "好", "白"], a: 2, r: "好朋友。" },
+    { unitId: "u5", tag: "单元五", q: "中秋（  ）真热闹。", options: ["日", "月", "节", "年"], a: 2, r: "中秋节。" },
+    { unitId: "u5", tag: "单元五", q: "月饼又香又（  ）。", options: ["甜", "亮", "圆", "白"], a: 0, r: "又香又甜。" },
+
+    // --- 单元六 (14题 - 已删除指定题目) ---
+    { unitId: "u6", tag: "单元六", q: "你（  ）什么不开心？", options: ["为", "谁", "样", "怎"], a: 0, r: "为什么。" },
+    { unitId: "u6", tag: "单元六", q: "马路没有手，也没有（  ）。", options: ["笔", "脚", "口", "书"], a: 1, r: "马路没有脚。" },
+    { unitId: "u6", tag: "单元六", q: "选出“回答”的拼音：", options: ["huí dá", "huǐ dǎ", "huí tā", "huí da"], a: 0, r: "回答 huí dá。" },
+    { unitId: "u6", tag: "单元六", q: "过马路要走在（  ）上。", options: ["草原", "马路", "校园", "公园"], a: 1, r: "走在马路上。" },
+    { unitId: "u6", tag: "单元六", q: "他胆子小，（  ）不敢自己走。", options: ["总是", "到处", "正在", "已经"], a: 0, r: "总是表示经常。" },
+    { unitId: "u6", tag: "单元六", q: "爸爸（  ）说：“我不怕。”", options: ["大大", "小小", "悄悄", "高高"], a: 2, r: "悄悄说话。" },
+    { unitId: "u6", tag: "单元六", q: "你叫什么名字（ ）", options: ["。", "，", "！", "？"], a: 3, r: "问句用问号。" },
+    { unitId: "u6", tag: "单元六", q: "过马路（  ）一直向前走。", options: ["去", "到", "一", "把"], a: 2, r: "一直向前走。" },
+    { unitId: "u6", tag: "单元六", q: "选出“说”的偏旁：", options: ["讠", "氵", "口", "扌"], a: 0, r: "言字旁。" },
+    { unitId: "u6", tag: "单元六", q: "他（  ）开了手，自己走。", options: ["抓", "拿", "放", "拉"], a: 2, r: "放开手。" },
+    { unitId: "u6", tag: "单元六", q: "选出“胆小”的反义词：", options: ["快乐", "胆大", "开心", "温暖"], a: 1, r: "胆小对胆大。" },
+    { unitId: "u6", tag: "单元六", q: "（  ）次过马路，我都很小心。", options: ["一", "每", "这", "哪"], a: 1, r: "每次都。" },
+    { unitId: "u6", tag: "单元六", q: "这本书是谁的（ ）", options: ["。", "，", "？", "！"], a: 2, r: "问号。" },
+    { unitId: "u6", tag: "单元六", q: "爸爸是个（  ）鬼。", options: ["开心", "胆小", "快乐", "美丽"], a: 1, r: "胆小鬼。" },
+
+    // --- 单元七 (15题) ---
+    { unitId: "u7", tag: "单元七", q: "我（  ）祝福送给你。", options: ["和", "把", "像", "给"], a: 1, r: "把字句。" },
+    { unitId: "u7", tag: "单元七", q: "（  ）的圣诞卡。", options: ["欢快", "美丽", "胆小", "温暖"], a: 1, r: "美丽的卡片。" },
+    { unitId: "u7", tag: "单元七", q: "哇，这里真美啊（ ）", options: ["。", "！", "？", "，"], a: 1, r: "感叹句用叹号。" },
+    { unitId: "u7", tag: "单元七", q: "我要把卡片送（  ）谁呢？", options: ["给", "到", "回", "去"], a: 0, r: "送给。" },
+    { unitId: "u7", tag: "单元七", q: "选出“快乐”的读音：", options: ["kuài lè", "kuài luò", "guài lè", "kuài lé"], a: 0, r: "快乐 lè。" },
+    { unitId: "u7", tag: "单元七", q: "我用（  ）画小鸟。", options: ["笔", "手", "书", "纸"], a: 0, r: "用笔画画。" },
+    { unitId: "u7", tag: "单元七", q: "圣诞老人来到了（ ）", options: ["！", "？", "，", "。"], a: 0, r: "叹号表示兴奋。" },
+    { unitId: "u7", tag: "单元七", q: "选出“成长”的拼音：", options: ["chéng zhǎng", "chén zăng", "chéng cháng", "chén chǎng"], a: 0, r: "成长 zhǎng。" },
+    { unitId: "u7", tag: "单元七", q: "平安夜，我向（  ）许愿。", options: ["行人", "星星", "彩笔", "桌子"], a: 1, r: "向星星许愿。" },
+    { unitId: "u7", tag: "单元七", q: "校园里充满了（  ）的笑声。", options: ["欢快", "胆小", "温暖", "闪亮"], a: 0, r: "欢快的笑声。" },
+    { unitId: "u7", tag: "单元七", q: "我（  ）可以自己做卡片。", options: ["要", "会", "送", "听"], a: 1, r: "会表示能力。" },
+    { unitId: "u7", tag: "单元七", q: "选出“星星”的字形：", options: ["青", "星", "晴", "兴"], a: 1, r: "辨字。" },
+    { unitId: "u7", tag: "单元七", q: "窗外传来好听的圣诞（  ）。", options: ["话", "歌", "笔", "画"], a: 1, r: "好听的歌。" },
+    { unitId: "u7", tag: "单元七", q: "妈妈（  ）苹果放在桌子上。", options: ["和", "都", "把", "像"], a: 2, r: "把苹果放好。" },
+    { unitId: "u7", tag: "单元七", q: "祝你生日（  ）。", options: ["开心", "快乐", "温暖", "美丽"], a: 1, r: "生日快乐。" }
+  ];
+
+  // 过滤当前单元的题目
+  const activeQuiz = allQuizData.filter(q => q.unitId === selectedUnit);
+
+  const handleStartQuiz = (unitId) => {
+    setSelectedUnit(unitId);
+    setView('quiz');
+    setCurrentQuestionIdx(0);
+    setScore(0);
+    setShowResult(false);
+    setSelectedOption(null);
+    setIsCorrect(null);
+    setShowHint(false);
+  };
+
+  const handleOptionClick = (index) => {
+    if (selectedOption !== null) return;
+    setSelectedOption(index);
+    const correct = index === activeQuiz[currentQuestionIdx].a;
+    setIsCorrect(correct);
+    if (correct) setScore(score + 1);
+  };
+
+  const handleNext = () => {
+    if (currentQuestionIdx < activeQuiz.length - 1) {
+      setCurrentQuestionIdx(currentQuestionIdx + 1);
+      setSelectedOption(null);
+      setIsCorrect(null);
+      setShowHint(false);
+    } else {
+      setShowResult(true);
+    }
+  };
+
+  const goHome = () => {
+    setView('home');
+    setSelectedUnit(null);
+  };
+
+  // --- 主页面视图 ---
+  if (view === 'home') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col items-center p-6">
+        <div className="w-full max-w-4xl mt-12">
+          <header className="text-center mb-16">
+            <h1 className="text-5xl font-black text-blue-600 mb-4 flex items-center justify-center gap-4">
+              <Gamepad2 size={56} className="text-orange-400" />
+              华文全真模拟机
+            </h1>
+            <p className="text-2xl text-blue-400 font-medium">小朋友，先选一课开始学习吧！</p>
+          </header>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {units.map((unit) => (
+              <button
+                key={unit.id}
+                onClick={() => handleStartQuiz(unit.id)}
+                className="group relative bg-white rounded-[32px] p-10 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 text-left overflow-hidden border-b-8 border-gray-100"
+              >
+                <div className={`absolute top-0 right-0 w-28 h-28 ${unit.color} opacity-10 rounded-bl-full group-hover:scale-125 transition-transform`}></div>
+                <div className="text-5xl mb-6">{unit.icon}</div>
+                <h3 className="text-2xl font-black text-gray-800 mb-2">{unit.title}</h3>
+                <p className="text-gray-500 font-bold text-lg">{unit.subtitle}</p>
+                <div className="mt-8 flex items-center text-blue-500 font-black group-hover:translate-x-2 transition-transform">
+                  开始练习 <ArrowRight size={22} className="ml-2" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        <div className="mt-auto py-12 flex gap-6">
+            {[1,2,3].map(i => <Heart key={i} size={32} fill="#F87171" className="text-red-400 animate-bounce" style={{animationDelay: `${i*0.2}s`}} />)}
+        </div>
+      </div>
+    );
+  }
+
+  // --- 结果页面视图 ---
+  if (showResult) {
+    return (
+      <div className="min-h-screen bg-pink-50 flex flex-col items-center justify-center p-6">
+        <div className="bg-white rounded-[48px] shadow-2xl p-12 max-w-md w-full border-b-[12px] border-pink-100 text-center">
+          <Trophy className="w-28 h-28 text-yellow-400 mx-auto mb-8 drop-shadow-xl animate-pulse" />
+          <h2 className="text-4xl font-black text-gray-800 mb-2">练习完成！</h2>
+          <p className="text-pink-500 text-xl font-bold mb-10">
+            {units.find(u => u.id === selectedUnit)?.title}
+          </p>
+          
+          <div className="bg-gradient-to-br from-pink-50 to-white rounded-[32px] py-10 mb-10 border-2 border-pink-100">
+            <p className="text-gray-500 mb-2 font-bold text-lg">最终得分</p>
+            <div className="text-7xl font-black text-pink-500">{score} <span className="text-3xl text-pink-300">/ {activeQuiz.length}</span></div>
+          </div>
+
+          <div className="space-y-6">
+            <button 
+              onClick={() => handleStartQuiz(selectedUnit)}
+              className="w-full bg-orange-400 hover:bg-orange-500 text-white font-black py-5 rounded-[24px] shadow-lg transition-all flex items-center justify-center gap-3 text-xl"
+            >
+              <RefreshCcw size={24} /> 再试一次
+            </button>
+            <button 
+              onClick={goHome}
+              className="w-full bg-white border-4 border-gray-100 hover:bg-gray-50 text-gray-400 font-black py-5 rounded-[24px] transition-all flex items-center justify-center gap-3 text-xl"
+            >
+              <Home size={24} /> 换个单元
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- 练习题目视图 ---
+  const currentData = activeQuiz[currentQuestionIdx];
+  const progress = ((currentQuestionIdx + 1) / activeQuiz.length) * 100;
+
+  return (
+    <div className="min-h-screen bg-blue-50 p-6 md:p-12 flex flex-col items-center">
+      {/* 顶部状态栏 */}
+      <div className="w-full max-w-2xl flex items-center justify-between mb-8">
+        <button 
+          onClick={goHome}
+          className="p-4 bg-white rounded-2xl shadow-md text-gray-400 hover:text-blue-500 transition-all transform hover:scale-105 active:scale-95"
+        >
+          <ChevronLeft size={28} />
+        </button>
+        <div className="bg-white px-8 py-4 rounded-3xl shadow-md flex items-center gap-6 border-b-4 border-blue-100">
+          <span className="font-black text-blue-600 flex items-center gap-2 text-lg">
+            <Book size={20} /> {currentData.tag}
+          </span>
+          <div className="w-px h-6 bg-gray-200"></div>
+          <span className="font-black text-yellow-500 flex items-center gap-2 text-lg">
+            <Star size={20} fill="currentColor" /> {score}
+          </span>
+        </div>
+        <div className="text-gray-400 font-black text-lg">
+          {currentQuestionIdx + 1} / {activeQuiz.length}
+        </div>
+      </div>
+
+      {/* 进度条 */}
+      <div className="w-full max-w-2xl h-5 bg-white rounded-full mb-10 overflow-hidden p-1 shadow-inner">
+        <div 
+          className="h-full bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full transition-all duration-700 ease-out"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      {/* 题目核心卡片 */}
+      <div className="w-full max-w-2xl bg-white rounded-[48px] shadow-2xl p-10 md:p-14 mb-10 border-b-[12px] border-blue-100 relative">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-500 text-white px-6 py-2 rounded-full font-black text-sm tracking-widest uppercase">
+          Question
+        </div>
+        
+        <h2 className="text-3xl md:text-4xl font-black text-gray-800 mb-12 leading-relaxed text-center">
+          {currentData.q}
+        </h2>
+
+        <div className="grid grid-cols-1 gap-5">
+          {currentData.options.map((option, idx) => (
+            <button
+              key={idx}
+              onClick={() => handleOptionClick(idx)}
+              className={`
+                group p-7 rounded-[28px] text-left text-2xl font-black transition-all duration-300 border-4 relative overflow-hidden
+                ${selectedOption === null 
+                  ? "border-gray-50 bg-gray-50 hover:border-blue-300 hover:bg-blue-50 text-gray-700" 
+                  : idx === currentData.a
+                    ? "border-green-400 bg-green-50 text-green-700"
+                    : selectedOption === idx
+                      ? "border-red-400 bg-red-50 text-red-700"
+                      : "border-gray-50 bg-gray-50 opacity-40"
+                }
+              `}
+            >
+              <div className="flex items-center justify-between relative z-10">
+                <span className="flex items-center gap-4">
+                  <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${selectedOption === idx ? 'bg-white shadow-sm' : 'bg-white/50'}`}>
+                    {String.fromCharCode(65 + idx)}
+                  </span>
+                  {option}
+                </span>
+                {selectedOption !== null && idx === currentData.a && <CheckCircle size={32} className="text-green-500 animate-bounce" />}
+                {selectedOption === idx && idx !== currentData.a && <AlertCircle size={32} className="text-red-500" />}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* 答案解析区 */}
+        {selectedOption !== null && (
+          <div className={`mt-10 p-8 rounded-[32px] animate-in fade-in zoom-in-95 duration-500 ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            <div className="flex items-center gap-3 font-black text-xl mb-2">
+              {isCorrect ? "✨ 回答正确！" : "💪 别灰心，再努力！"}
+            </div>
+            <p className="font-bold text-lg opacity-80">{currentData.r}</p>
+          </div>
+        )}
+      </div>
+
+      {/* 底部交互区 */}
+      <div className="w-full max-w-2xl flex justify-between items-center px-4">
+        <button 
+          onClick={() => setShowHint(!showHint)}
+          className={`
+            flex items-center gap-3 font-black text-lg bg-white px-8 py-5 rounded-[24px] shadow-lg transition-all border-b-4 
+            ${showHint ? "border-yellow-200 text-yellow-600" : "border-blue-100 text-blue-500 hover:bg-blue-50"}
+          `}
+        >
+          <Lightbulb size={28} className={showHint ? "fill-yellow-400 text-yellow-500" : ""} />
+          {showHint ? currentData.hint : "小贴士"}
+        </button>
+
+        <button
+          onClick={handleNext}
+          disabled={selectedOption === null}
+          className={`
+            flex items-center gap-4 px-12 py-5 rounded-[24px] font-black text-2xl shadow-xl transition-all
+            ${selectedOption === null 
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed translate-y-1" 
+              : "bg-orange-400 hover:bg-orange-500 text-white transform hover:-translate-y-1 active:translate-y-0 border-b-8 border-orange-600"
+            }
+          `}
+        >
+          {currentQuestionIdx < activeQuiz.length - 1 ? "下一题" : "完成练习"}
+          <ArrowRight size={28} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default App;
